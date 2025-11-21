@@ -1,0 +1,30 @@
+{
+    "$schema": "https://json.schemastore.org/package",
+    "name": "vivien",
+    "version": "0.0.0",
+    "description": "Secure, lightweight, and user-friendly modern JavaScript toolchain optimized for performance and minimalism.",
+    "main": "index.ts",
+    "module": "index.ts",
+    "type": "module",
+    "scripts": {
+        "build": "bun build ./src/*.ts --outdir ./dist --target node"
+    },
+    "exports": {
+        "./*": {
+            "types": "./src/*.ts",
+            "import": "./src/*.ts",
+            "default": "./src/*.ts"
+        }
+    },
+    "devDependencies": {
+        "typescript": "latest",
+        "@types/bun": "latest"
+    },
+    "peerDependencies": {},
+    "dependencies": {
+        "@paralleldrive/cuid2": "latest",
+        "ansi-colors": "^4.1.3",
+        "drizzle-orm": "latest",
+        "zod": "latest"
+    }
+}
