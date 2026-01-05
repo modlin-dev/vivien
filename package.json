@@ -3,13 +3,14 @@
     "name": "vivien",
     "version": "0.0.0",
     "description": "Secure, lightweight, and user-friendly modern JavaScript toolchain optimized for performance and minimalism.",
-    "main": "index.ts",
-    "module": "index.ts",
+    "main": "src/index.ts",
+    "module": "src/index.ts",
     "type": "module",
     "scripts": {
         "build": "bun build ./src/*.ts --outdir ./dist"
     },
     "exports": {
+        ".": "./src/index.ts",
         "./*": {
             "types": "./src/*.ts",
             "import": "./src/*.ts",
@@ -17,15 +18,15 @@
         }
     },
     "devDependencies": {
-        "typescript": "latest",
-        "@types/bun": "latest"
+        "@types/bun": "^1.3.3",
+        "typescript": "^5.9.3"
     },
     "peerDependencies": {},
     "dependencies": {
-        "@paralleldrive/cuid2": "latest",
+        "@paralleldrive/cuid2": "^3.0.4",
         "ansi-colors": "^4.1.3",
-        "drizzle-orm": "latest",
-        "zod": "latest",
-        "volter": "workspace:*"
+        "drizzle-orm": "^0.45.1",
+        "volter": "workspace:*",
+        "zod": "^4.1.13"
     }
 }
