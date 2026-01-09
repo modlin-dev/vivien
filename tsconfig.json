@@ -16,17 +16,19 @@
         "moduleResolution": "bundler",
         "noUncheckedIndexedAccess": true,
         "resolveJsonModule": true,
-        "skipLibCheck": false, // ...
+        "skipLibCheck": true,
         "strict": true,
         "target": "esnext",
-        "outDir": "dist",
-        "rootDir": "src"
+        "outDir": "types",
+        "rootDir": "src",
+        "emitDeclarationOnly": true
     },
     "include": [
         "src"
     ],
     "exclude": [
         "node_modules",
-        "dist"
+        "dist",
+        "types"
     ]
 }

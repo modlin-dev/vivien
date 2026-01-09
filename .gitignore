@@ -5,6 +5,7 @@ node_modules
 out
 dist
 *.tgz
+types
 
 # code coverage
 coverage
@@ -38,3 +39,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # bun
 bun.lock
+
+# MIS
+dev

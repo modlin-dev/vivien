@@ -1,32 +1,43 @@
 {
-    "$schema": "https://json.schemastore.org/package",
-    "name": "vivien",
-    "version": "0.0.0",
-    "description": "Secure, lightweight, and user-friendly modern JavaScript toolchain optimized for performance and minimalism.",
-    "main": "src/index.ts",
-    "module": "src/index.ts",
-    "type": "module",
-    "scripts": {
-        "build": "bun build ./src/*.ts --outdir ./dist"
-    },
-    "exports": {
-        ".": "./src/index.ts",
-        "./*": {
-            "types": "./src/*.ts",
-            "import": "./src/*.ts",
-            "default": "./src/*.ts"
-        }
-    },
-    "devDependencies": {
-        "@types/bun": "^1.3.3",
-        "typescript": "^5.9.3"
-    },
-    "peerDependencies": {},
-    "dependencies": {
-        "@paralleldrive/cuid2": "^3.0.4",
-        "ansi-colors": "^4.1.3",
-        "drizzle-orm": "^0.45.1",
-        "volter": "workspace:*",
-        "zod": "^4.1.13"
-    }
+	"$schema": "https://json.schemastore.org/package",
+	"name": "vivien",
+	"version": "0.0.0",
+	"description": "Enterprise and developer focused error tracking and application performance monitoring platform.",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"type": "module",
+	"scripts": {
+		"build": "bun build ./src/*.ts --outdir ./dist --target bun --minify",
+		"build:types": "tsc --declarationMap false"
+	},
+	"exports": {
+		".": {
+			"types": "./types/index.d.ts",
+			"import": "./dist/index.js",
+			"default": "./dist/index.js"
+		},
+		"./*": {
+			"types": "./types/*.d.ts",
+			"import": "./dist/*.js",
+			"default": "./dist/*.js"
+		}
+	},
+	"files": [
+		"dist",
+		"types"
+	],
+	"types": "./types/index.d.ts",
+	"typings": "./types/index.d.ts",
+	"devDependencies": {
+		"@types/bun": "^1.3.3",
+		"typescript": "^5.9.3"
+	},
+	"peerDependencies": {},
+	"dependencies": {
+		"@paralleldrive/cuid2": "^3.0.4",
+		"ansi-colors": "^4.1.3",
+		"drizzle-orm": "^0.45.1",
+		"volter": "workspace:*",
+		"zod": "^4.1.13"
+	}
 }

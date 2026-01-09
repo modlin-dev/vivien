@@ -1,7 +1,8 @@
 import { SQLiteError } from "bun:sqlite"
-import type { SQL } from "bun"
+import { SQL } from "bun"
 import { ZodError } from "zod"
 import { ServerError, ErrorCodes } from "volter/error"
+import { DrizzleError } from "drizzle-orm"
 
 export function autofix(resolver: (error: ServerError) => void) {
 	return (error: unknown) => {
@@ -15,17 +16,32 @@ export function autofix(resolver: (error: ServerError) => void) {
 			if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
 				const i = error.message.lastIndexOf(" ") + 1
 				const serr = new ServerError(error.message, {
-					at: error.message.slice(i).split("."),
 					code: ErrorCodes.ALREADY_EXISTS,
+					at: error.message.slice(i).split("."),
+				})
+				return resolver(serr)
+			}
+		}
+		if (error instanceof SQL.PostgresError) {
+			if (error.detail) {
+				if (error.constraint?.endsWith("_unique")) {
+					const serr = new ServerError(error.detail, {
+						code: ErrorCodes.ALREADY_EXISTS,
+						at: [error.constraint.split("_")[1] ?? ""],
+					})
+					return resolver(serr)
+				}
+				const serr = new ServerError(error.detail, {
+					code: ErrorCodes.INTERNAL_SERVER_ERROR,
 				})
 				return resolver(serr)
 			}
 		}
 		if (error instanceof ServerError) return resolver(error)
+
 		const serr = new ServerError("Unexpected error", {
 			code: ErrorCodes.INTERNAL_SERVER_ERROR,
 		})
-		console.log(error)
 		return resolver(serr)
 	}
 }
@@ -61,7 +77,7 @@ export function workflow<T, P = T, A = string, O extends boolean = false, R = vo
 					return await select(refined, session)
 				}
 				if (insert) {
-					return await insert(data, session)
+					return await insert(refined, session)
 				}
 			} catch (error) {
 				throw options.onError(error)
@@ -69,7 +85,8 @@ export function workflow<T, P = T, A = string, O extends boolean = false, R = vo
 		},
 		async resolver(_parent: unknown, args: unknown, context: { request: Request }, _info: unknown): Promise<R> {
 			try {
-				const data = options.input.parse(args)
+				const data = options.input.parse(args) // ZodError
+
 				const authorization = context.request.headers.get("authorization")
 				if (options.auth && !authorization?.startsWith("Bearer ")) {
 					throw new ServerError("Authorization header is not provided", {
@@ -77,6 +94,7 @@ export function workflow<T, P = T, A = string, O extends boolean = false, R = vo
 					})
 				}
 				const token = authorization?.slice(7)
+
 				const session = (auth && token ? await auth(token) : token) as unknown as A
 
 				if (existence) if (!(await existence(data, session))) return
@@ -84,9 +102,9 @@ export function workflow<T, P = T, A = string, O extends boolean = false, R = vo
 				const refined = (transform ? await transform(data, session) : data) as unknown as P
 
 				if (select) return await select(refined, session)
-				if (insert) await insert(data, session)
+				if (insert) return await insert(refined, session)
 			} catch (error) {
-				throw options.onError(error)
+				throw await options.onError(error)
 			}
 		},
 	}

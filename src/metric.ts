@@ -1,6 +1,5 @@
 import { SQL, stdout, type RedisClient } from "bun"
 import ansi from "ansi-colors"
-import { timestamp } from "volter"
 
 declare global {
 	interface Request {
@@ -15,6 +14,7 @@ export interface HTTPLog {
 	status: number
 	ip: string
 	user_agent: string | null
+	time: number
 	created: Date
 }
 
@@ -33,7 +33,7 @@ export class Monitor {
 	db: SQL
 	resolver: (data: HTTPLog) => unknown | Promise<unknown>
 
-	async log(request: Request, response: Response) {
+	async log(request: Request, response: Response, time: number) {
 		const sql = this.db
 		const data: HTTPLog = {
 			id: 0,
@@ -42,11 +42,12 @@ export class Monitor {
 			status: response.status,
 			ip: request.ip.address,
 			user_agent: request.headers.get("user-agent"),
+			time: time,
 			created: new Date(),
 		}
 		const [log]: HTTPLog[] = await sql`
-            INSERT INTO "logs" ("method", "url", "status", "ip", "user_agent")
-            VALUES (${data.method}, ${data.url}, ${data.status}, ${data.ip}, ${data.user_agent})
+            INSERT INTO "logs" ("method", "url", "status", "ip", "user_agent", "time")
+            VALUES (${data.method}, ${data.url}, ${data.status}, ${data.ip}, ${data.user_agent}, ${time})
             RETURNING *
         `
 		const result = await this.resolver(log ?? data)
@@ -55,17 +56,35 @@ export class Monitor {
 	}
 	async migrate() {
 		const sql = this.db
-		return await sql`
-            CREATE TABLE IF NOT EXISTS "logs" (
-                "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-                "method" TEXT NOT NULL,
-                "url" TEXT NOT NULL,
-                "status" INTEGER NOT NULL,
-                "ip" TEXT NOT NULL,
-                "user_agent" TEXT,
-                "created" DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `
+		console.log()
+		switch (sql.options.adapter) {
+			case "sqlite":
+				return await sql`
+                    CREATE TABLE IF NOT EXISTS "logs" (
+                        "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                        "method" TEXT NOT NULL,
+                        "url" TEXT NOT NULL,
+                        "status" INTEGER NOT NULL,
+                        "ip" TEXT NOT NULL,
+                        "user_agent" TEXT,
+                        "time" DATETIME NOT NULL,
+                        "created" DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                `
+			case "postgres":
+				return await sql`
+                    CREATE TABLE IF NOT EXISTS "logs" (
+                        "id" SERIAL PRIMARY KEY,
+                        "method" VARCHAR(8) NOT NULL,
+                        "url" TEXT NOT NULL,
+                        "status" INTEGER NOT NULL,
+                        "ip" INET NOT NULL,
+                        "user_agent" TEXT,
+                        "time" INTEGER NOT NULL,
+                        "created" TIMESTAMP NOT NULL DEFAULT now()
+                    )
+                `
+		}
 	}
 	resolve(resolver: (data: HTTPLog) => unknown | Promise<unknown>) {
 		this.resolver = resolver
@@ -94,5 +113,5 @@ export function ansi_status(status: number) {
 }
 export function ansi_log(data: HTTPLog) {
 	const timestamp = new Date(data.created).toISOString().slice(0, 19).replace("T", " ")
-	return `${ansi.dim(data.id.toString().padStart(2, "0"))} ${ansi.dim(timestamp)} ${ansi_method(data.method)} ${ansi.dim(data.url)} ${ansi_status(data.status)} ${ansi.red(data.ip)}`
+	return `${ansi.dim(data.id.toString().padStart(2, "0"))} ${ansi.dim(timestamp)} ${ansi_method(data.method)} ${ansi.dim(data.url)} ${ansi_status(data.status)} ${ansi.red(data.ip)} in ${ansi.dim(`${data.time}ms`)}`
 }
