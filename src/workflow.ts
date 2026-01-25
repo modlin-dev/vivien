@@ -2,10 +2,10 @@ import { SQLiteError } from "bun:sqlite"
 import { SQL } from "bun"
 import { ZodError } from "zod"
 import { ServerError, ErrorCodes } from "volter/error"
-import { DrizzleError } from "drizzle-orm"
 
-export function autofix(resolver: (error: ServerError) => void) {
+export function autofix(resolver: (error: ServerError) => void, dev?: boolean) {
 	return (error: unknown) => {
+        if (dev) console.error(error)
 		if (error instanceof ZodError) {
 			const serr = new ServerError("Failed to validate", {
 				code: ErrorCodes.VALIDATION_FAILED,
@@ -57,33 +57,34 @@ export function workflow<T, P = T, A = string, O extends boolean = false, R = vo
 		transform?: (input: T, auth: O extends true ? A : A | undefined) => P | Promise<P>
 		existence?: (input: T, auth: O extends true ? A : A | undefined) => unknown
 		check?: (input: T, auth: O extends true ? A : A | undefined) => unknown
-		select?: (input: P, auth: O extends true ? A : A | undefined) => R | Promise<R>
 		insert?: (input: P, auth: O extends true ? A : A | undefined) => R | Promise<R>
+		select?: (input: P, auth: O extends true ? A : A | undefined) => R | Promise<R>
+		update?: (input: P, auth: O extends true ? A : A | undefined) => R | Promise<R>
+		delete?: (input: P, auth: O extends true ? A : A | undefined) => R | Promise<R>
 	}
 	onError(error: unknown): unknown
 }) {
-	const { transform, existence, check, select, insert, auth } = options.steps
+	const steps = options.steps
+	const { transform, existence, check, auth } = options.steps
 	return {
 		async run(input: T, token?: string): Promise<R> {
 			try {
 				const data = options.input.parse(input)
 				const session = (auth && token ? await auth(token) : token) as unknown as A
 
-				if (existence) if (!(await existence(data, session))) return null
-				if (check) if (!(await check(data, session))) return null
+				if (existence) if (!(await existence(data, session))) return
+				if (check) if (!(await check(data, session))) return
 				const refined = (transform ? await transform(data, session) : data) as unknown as P
 
-				if (select) {
-					return await select(refined, session)
-				}
-				if (insert) {
-					return await insert(refined, session)
-				}
+				if (steps.insert) return await steps.insert(refined, session)
+				if (steps.select) return await steps.select(refined, session)
+				if (steps.update) return await steps.update(refined, session)
+				if (steps.delete) return await steps.delete(refined, session)
 			} catch (error) {
 				throw options.onError(error)
 			}
 		},
-		async resolver(_parent: unknown, args: unknown, context: { request: Request }, _info: unknown): Promise<R> {
+		async resolver(_parent: unknown, args: T, context: { request: Request }, _info: unknown): Promise<R> {
 			try {
 				const data = options.input.parse(args) // ZodError
 
@@ -101,8 +102,10 @@ export function workflow<T, P = T, A = string, O extends boolean = false, R = vo
 				if (check) if (!(await check(data, session))) return
 				const refined = (transform ? await transform(data, session) : data) as unknown as P
 
-				if (select) return await select(refined, session)
-				if (insert) return await insert(refined, session)
+				if (steps.insert) return await steps.insert(refined, session)
+				if (steps.select) return await steps.select(refined, session)
+				if (steps.update) return await steps.update(refined, session)
+				if (steps.delete) return await steps.delete(refined, session)
 			} catch (error) {
 				throw await options.onError(error)
 			}

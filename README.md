@@ -1,2 +1,2 @@
-# Volter
-Secure, lightweight, and user-friendly modern JavaScript toolchain optimized for performance and minimalism.
+# Vivien
+Enterprise and developer focused error tracking and application performance monitoring platform.
