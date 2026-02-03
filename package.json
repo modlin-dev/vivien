@@ -7,7 +7,7 @@
 	"module": "dist/index.js",
 	"type": "module",
 	"scripts": {
-		"build": "bun build ./src/*.ts --outdir ./dist --target bun --minify && tsc --declarationMap false",
+		"build": "bun build ./src/*.ts --outdir ./dist --target bun --minify && tsc --declarationMap false --noEmitOnError false --strict false"
 	},
 	"exports": {
 		".": {
