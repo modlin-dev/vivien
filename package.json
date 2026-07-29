@@ -11,14 +11,14 @@
 	},
 	"exports": {
 		".": {
-			"types": "./types/index.d.ts",
-			"import": "./dist/index.js",
-			"default": "./dist/index.js"
+			"types": "./src/index.ts",
+			"import": "./src/index.ts",
+			"default": "./src/index.ts"
 		},
 		"./*": {
-			"types": "./types/*.d.ts",
-			"import": "./dist/*.js",
-			"default": "./dist/*.js"
+			"types": "./src/*.ts",
+			"import": "./src/*.ts",
+			"default": "./src/*.ts"
 		}
 	},
 	"files": [
